@@ -1,3 +1,3 @@
-advantofcode2019
+adventofcode2019
 ================
 README text here.
