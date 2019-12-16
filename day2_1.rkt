@@ -51,10 +51,6 @@
 (define (opcode list)
   (opcode+ 0 list))
 
-(for* ([i (in-range 100)]
-       [j (in-range 100)]
-       #:when (= (* i j) 25))
-    (printf "~s ~s ~n" i j))
 
 (define data (map (lambda (str) (string->number str)) (string-split (first (file->lines "day2_1.txt")) ",")))
 
