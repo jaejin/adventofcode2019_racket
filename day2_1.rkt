@@ -1,6 +1,7 @@
 #lang racket/base
 (require racket/file)
 (require racket/list)
+(require racket/string)
 
 (module+ test
   (require rackunit))
@@ -50,7 +51,23 @@
 (define (opcode list)
   (opcode+ 0 list))
 
-        
+(for* ([i (in-range 100)]
+       [j (in-range 100)]
+       #:when (= (* i j) 25))
+    (printf "~s ~s ~n" i j))
+
+(define data (map (lambda (str) (string->number str)) (string-split (first (file->lines "day2_1.txt")) ",")))
+
+(define (update-data data position value)
+  (list-set data position value))
+
+(define (update-i-j data i j)
+  (update-data (update-data data 1 i) 2 j))
+
+ (for* ([i (in-range 100)]
+       [j (in-range 100)]
+       #:when (= (first (opcode (update-i-j data i j) )) 19690720))
+    (printf "~s ~s ~n" i j))
 
 (module+ test
   ;; Any code in this `test` submodule runs when this file is run using DrRacket
