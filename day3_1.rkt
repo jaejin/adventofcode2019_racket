@@ -1,4 +1,5 @@
 #lang racket
+(require plot)
 
 (define ZERO 48)
 (define (char->number char)
@@ -28,10 +29,10 @@
 
 
 (define (right startpoint num ypoint)
-  (foldl (lambda (x result) (cons (list (make-key x ypoint) "R") result)) '() (range 0 (+ num 1))))
+  (foldl (lambda (x result) (cons (list (make-key (+ startpoint x) ypoint) "R") result)) '() (range 0 (+ num 1))))
 
 (define (up startpoint num xpoint)
-  (foldl (lambda (y result) (cons (list (make-key xpoint y) "U") result)) '() (range 0 (+ num 1))))
+  (foldl (lambda (y result) (cons (list (make-key xpoint (+ startpoint y)) "U") result)) '() (range 0 (+ num 1))))
 
 (define (down startpoint num xpoint)
   (foldl (lambda (y result) (cons (list (make-key xpoint (- startpoint y)) "D") result)) '() (range 0 (+ num 1))))
@@ -70,24 +71,60 @@
        (make-immutable-hash) (make-line data)))
 
 (define (get-distance first-line second-line)
-  (let ([hashdata (transform-hash first-line)])
+  (apply min (map (lambda (data)
+         (let* ([point (string-split (first data) "_")]
+                [x (get-xpoint point)]
+                [y (get-ypoint point)])
+           (+ (abs x) (abs y))))
+ (let ([hashdata (transform-hash first-line)])
          (filter (lambda (point)
               (let* ([ref-data (hash-ref hashdata (first point) "")]
                     [value (second point)]
                     [key (first point)])
-                (printf "~s ~s ~s ~n" ref-data value key)
                 (and (non-empty-string? ref-data)
                      (not (equal? value ref-data))
                      (not (equal? key "0_0")))))
-                 (make-line second-line))))
+                 (make-line second-line))))))
 
 
-(string-split "R75,D30,R83,U83,L12,D49,R71,U7,L72
-U62,R66,U55,R34,D71,R55,D58,R83" ",")
+(define (tranform-points line)
+   (map (lambda (data)
+         (let ([point (string-split (first data) "_")])
+           (vector (get-xpoint point) (get-ypoint point)))) line))
+
 
 (get-distance sample1 sample2)
 
 (get-distance (string-split "R75,D30,R83,U83,L12,D49,R71,U7,L72" ",") (string-split "U62,R66,U55,R34,D71,R55,D58,R83" ","))
 
+(get-distance (string-split "R98,U47,R26,D63,R33,U87,L62,D20,R33,U53,R51" ",") (string-split "U98,R91,D20,R16,D67,R40,U7,R15,U6,R7" ","))
+
+(define input-data (file->lines "day3_1.txt") )
+
+(get-distance (string-split (first input-data) ",") (string-split (second input-data) ","))
+
+
+
+;;(parameterize ([plot-width    550]
+;;                 [plot-height   550])
+;;  (plot (points (append (tranform-points (make-line sample1)) (tranform-points (make-line sample2))) 
+;;                #:alpha 0.3
+;;                #:sym 'fullcircle1
+;;                #:color "blue") 
+ ;;      #:x-min -1 #:x-max 10 #:y-min -1 #:y-max 10)
+ ;; )
+
+;;	(append (tranform-points (make-line (string-split "R75,D30,R83,U83,L12,D49,R71,U7,L72" ","))) (tranform-points (make-line (string-split "U62,R66,U55,R34,D71,R55,D58,R83" ","))))
+
+;;(parameterize ([plot-width    550]
+;;                 [plot-height   550])
+;;  (plot (points (tranform-points (make-line (string-split "R75,D30,R83,U83,L12,D49,R71,U7,L72" ",")))
+;;                #:alpha 0.3
+;;                #:sym 'fullcircle1
+;;                #:color "blue") 
+;;       #:x-min -10 #:x-max 100 #:y-min -50 #:y-max 100)
+;;  )
+
+;;(make-line (string-split "R75,D30,R83,U83,L12,D49,R71,U7,L72" ","))
 
 ;; (printf "~s" table)
