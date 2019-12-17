@@ -28,38 +28,66 @@
 
 
 (define (right startpoint num ypoint)
-  (foldl (lambda (x result) (append result (list (make-key x ypoint) "R"))) '() (range startpoint num)))
+  (foldl (lambda (x result) (cons (list (make-key x ypoint) "R") result)) '() (range 0 (+ num 1))))
 
-(define (up data startpoint num xpoint)
-  (for-each (lambda (y) (hash-set! data (make-key xpoint y) "U")) (range startpoint num))
-  (make-key xpoint num))
+(define (up startpoint num xpoint)
+  (foldl (lambda (y result) (cons (list (make-key xpoint y) "U") result)) '() (range 0 (+ num 1))))
 
-(define (down data startpoint num xpoint)
-  (for-each (lambda (y) (hash-set! data (make-key xpoint (- startpoint y)) "D")) (range startpoint num))
-  (make-key xpoint (- startpoint num)))
-
-(define (left data startpoint num ypoint)
-  (for-each (lambda (x) (hash-set! data (make-key (- startpoint x) ypoint) "L")) (range startpoint num))
-  (make-key (- startpoint num) ypoint))
-
+(define (down startpoint num xpoint)
+  (foldl (lambda (y result) (cons (list (make-key xpoint (- startpoint y)) "D") result)) '() (range 0 (+ num 1))))
+  
+(define (left startpoint num ypoint)
+  (foldl (lambda (x result) (cons (list (make-key (- startpoint x) ypoint) "L") result)) '() (range 0 (+ num 1))))
 
 
 (define data (map (lambda (str) (string->number str)) (string-split (first (file->lines "day2_1.txt")) ",")))
 
+
 (define sample1 '("R8" "U5" "L5" "D3"))
+(define sample2 '("U7" "R6" "D4" "L4"))
 
 (define (dispatcher data xpoint ypoint)
   (let ([direction (string-ref data 0)]
         [number (string->number (substring data 1))])
     (cond
-      [(equal? #\R direction) (right table xpoint number ypoint)]
-      [(equal? #\L direction) (left table xpoint number ypoint)]
-      [(equal? #\U direction) (left table ypoint number xpoint)]
-      [(equal? #\D direction) (left table ypoint number xpoint)])))
+      [(equal? #\R direction) (right xpoint number ypoint)]
+      [(equal? #\L direction) (left xpoint number ypoint)]
+      [(equal? #\U direction) (up ypoint number xpoint)]
+      [(equal? #\D direction) (down ypoint number xpoint)])))
 
 
-(foldl (lambda (x result) (let ([point (string-split result "_")])
-                            (printf "~s~n" (string-ref x 0))
-                            (dispatcher x (get-xpoint point) (get-ypoint point)))) "0_0" sample1)
+(define (make-line data)
+  (cdr (reverse (foldl (lambda (x result)
+                       (let ([point (string-split  (caar result) "_")])
+                         (append (dispatcher x (get-xpoint point) (get-ypoint point)) result)))
+                     (list (list "0_0" "")) data))))
 
-(printf "~s" table)
+(define (transform-hash data)
+  (foldl (lambda (point-data result)
+         (if (non-empty-string? (second point-data))
+             (hash-set result (first point-data) (second point-data))
+             result))
+       (make-immutable-hash) (make-line data)))
+
+(define (get-distance first-line second-line)
+  (let ([hashdata (transform-hash first-line)])
+         (filter (lambda (point)
+              (let* ([ref-data (hash-ref hashdata (first point) "")]
+                    [value (second point)]
+                    [key (first point)])
+                (printf "~s ~s ~s ~n" ref-data value key)
+                (and (non-empty-string? ref-data)
+                     (not (equal? value ref-data))
+                     (not (equal? key "0_0")))))
+                 (make-line second-line))))
+
+
+(string-split "R75,D30,R83,U83,L12,D49,R71,U7,L72
+U62,R66,U55,R34,D71,R55,D58,R83" ",")
+
+(get-distance sample1 sample2)
+
+(get-distance (string-split "R75,D30,R83,U83,L12,D49,R71,U7,L72" ",") (string-split "U62,R66,U55,R34,D71,R55,D58,R83" ","))
+
+
+;; (printf "~s" table)
