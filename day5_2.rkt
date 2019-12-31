@@ -48,6 +48,7 @@
   (check-true (= POSITION-MODE 0))
   (check-equal? (get-value '(2 4 4 5 99 0) 1 0) 99)
   (check-equal? (get-value '(2 4 4 5 99 0) 1 1) 4)
+  (check-equal? (get-value '(3 9 8 9 10 0 4 9 99 8 8) 9 0) 99)
   (check-equal? (get-result-position '(2 4 4 5 99 0) 3 0) 5)
   (check-equal? (get-result-position '(2 4 4 5 99 0) 3 1) 3)
   )
@@ -123,11 +124,51 @@
       (let* ([value-position (get-result-position list (get-first position) (instructor-struct-first-mode mode))]
              [new-list (store (store-data-struct-input store-data) value-position list)])
         (opcode+ (+ position 2) new-list (store-data-struct new-list (store-data-struct-input store-data) (store-data-struct-output store-data)))))
+    (define (_jump-if-true position list mode store-data)
+      (let ([first (get-value list (get-first position) (instructor-struct-first-mode mode))]
+             [second (get-value list (get-second position) (instructor-struct-second-mode mode))])
+        (if (not (= 0 first)) 
+            (opcode+ (+ position second) list (store-data-struct list (store-data-struct-input store-data) (store-data-struct-output store-data)))
+            (opcode+ (+ position 3) list (store-data-struct list (store-data-struct-input store-data) (store-data-struct-output store-data)))
+            )
+        ))
+    (define (_jump-if-false position list mode store-data)
+      (let ([first (get-value list (get-first position) (instructor-struct-first-mode mode))]
+            [second (get-value list (get-second position) (instructor-struct-second-mode mode))])
+        (if (= 0 first)
+            (opcode+ (+ position second) list (store-data-struct list (store-data-struct-input store-data) (store-data-struct-output store-data)))
+            (opcode+ (+ position 3) list (store-data-struct list (store-data-struct-input store-data) (store-data-struct-output store-data)))
+            )
+        ))
+    (define (_less-than position list mode store-data)
+      (let ([first (get-value list (get-first position) (instructor-struct-first-mode mode))]
+            [second (get-value list (get-second position) (instructor-struct-second-mode mode))]
+            [third (get-value list (get-third position) (instructor-struct-third-mode mode))])
+        (if (<= first second)
+            (let ([new-list (store 1 third list)])
+              (opcode+ (+ position 4) new-list (store-data-struct new-list (store-data-struct-input store-data) (store-data-struct-output store-data))))
+            (let ([new-list (store 0 third list)])
+              (opcode+ (+ position 4) new-list (store-data-struct new-list (store-data-struct-input store-data) (store-data-struct-output store-data)))))
+        ))
+    (define (_equals position list mode store-data)
+      (let ([first (get-value list (get-first position) (instructor-struct-first-mode mode))]
+            [second (get-value list (get-second position) (instructor-struct-second-mode mode))]
+            [third (get-value list (get-third position) (instructor-struct-third-mode mode))])
+        (if (= first second)
+            (let ([new-list (store 1 third list)])
+              (opcode+ (+ position 4) new-list (store-data-struct new-list (store-data-struct-input store-data) (store-data-struct-output store-data))))
+            (let ([new-list (store 0 third list)])
+              (opcode+ (+ position 4) new-list (store-data-struct new-list (store-data-struct-input store-data) (store-data-struct-output store-data)))))
+        ))
     (cond
       [(equal? op-code 1) (_add position list mode store-data)]
       [(equal? op-code 2) (_multiply position list mode store-data)]
       [(equal? op-code 3) (_input position list mode store-data)]
       [(equal? op-code 4) (_output position list mode store-data)]
+      [(equal? op-code 5) (_jump-if-true position list mode store-data)]
+      [(equal? op-code 6) (_jump-if-false position list mode store-data)]
+      [(equal? op-code 7) (_less-than position list mode store-data)]
+      [(equal? op-code 8) (_equals position list mode store-data)]
       [(equal? op-code 99) (store-data-struct list (store-data-struct-input store-data) (store-data-struct-output store-data))])))
 
 (define (opcode list inputdata)
@@ -135,7 +176,7 @@
 
 (define data (map (lambda (str) (string->number str)) (string-split (first (file->lines "day5_1.txt")) ",")))
 
-(opcode data 1)
+;; (opcode data 5)
 
 (module+ test
   ;; Any code in this `test` submodule runs when this file is run using DrRacket
